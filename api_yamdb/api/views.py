@@ -6,7 +6,6 @@ from django.shortcuts import get_object_or_404
 from rest_framework import mixins, status, viewsets, permissions, serializers
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.filters import SearchFilter
-from rest_framework.pagination import PageNumberPagination
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
 
@@ -21,7 +20,6 @@ class TitlesViewSet(viewsets.ModelViewSet):
     filter_backends = (DjangoFilterBackend, SearchFilter)
     permission_classes = (CustomPermission, )
     filterset_class = TitleFilter
-    pagination_class = PageNumberPagination
 
     def get_serializer_class(self):
         if self.action in ('create', 'update', 'partial_update'):
@@ -38,7 +36,6 @@ class CreateListDestroyViewSet(mixins.ListModelMixin,
 class CategoryViewSet(CreateListDestroyViewSet):
     queryset = Category.objects.all()
     serializer_class = serializers.CategorySerializer
-    pagination_class = PageNumberPagination
     permission_classes = (CustomPermission,)
     search_fields = ['name']
     filter_backends = [SearchFilter]
@@ -48,7 +45,6 @@ class CategoryViewSet(CreateListDestroyViewSet):
 class GenreViewSet(CreateListDestroyViewSet):
     queryset = Genre.objects.all()
     serializer_class = serializers.GenreSerializer
-    pagination_class = PageNumberPagination
     permission_classes = (CustomPermission,)
     filter_backends = [SearchFilter]
     search_fields = ['name']
@@ -58,7 +54,6 @@ class GenreViewSet(CreateListDestroyViewSet):
 class ReviewViewSet(viewsets.ModelViewSet):
     queryset = Review.objects.all()
     serializer_class = serializers.ReviewSerializer
-    pagination_class = PageNumberPagination
     permission_classes = (CustomPermission, )
 
     def get_queryset(self):
@@ -68,7 +63,6 @@ class ReviewViewSet(viewsets.ModelViewSet):
 
 class CommentViewSet(viewsets.ModelViewSet):
     serializer_class = serializers.CommentSerializer
-    pagination_class = PageNumberPagination
     permission_classes = (CustomPermission, )
 
     def get_queryset(self):
