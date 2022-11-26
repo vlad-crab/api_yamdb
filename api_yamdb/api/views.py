@@ -3,15 +3,17 @@ import random
 from django.core.mail import send_mail
 from django.shortcuts import get_object_or_404
 
-from rest_framework import serializers
-from rest_framework import mixins, viewsets
-from rest_framework import permissions
-from rest_framework import status, serializers
+from rest_framework import mixins, viewsets, permissions, status, serializers
 from rest_framework.response import Response
+from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
 
 from reviews.models import User
-from api.serializers import UserSerializer, GetTokenUserSerializer
+from .permissions import YaMDB_Admin
+from api.serializers import (
+    GetTokenUserSerializer,
+    RetrieveUpdateUserSerializer
+)
 
 
 def code_generate(size=8, chars=string.ascii_uppercase + string.digits):
@@ -21,13 +23,11 @@ def code_generate(size=8, chars=string.ascii_uppercase + string.digits):
 def get_tokens_for_user(user):
     refresh = RefreshToken.for_user(user)
     return {
-        'refresh': str(refresh),
         'access': str(refresh.access_token),
     }
 
 
-class GetTokenUserApi(mixins.CreateModelMixin,
-                      viewsets.GenericViewSet):
+class GetTokenViewSet(mixins.CreateModelMixin, viewsets.GenericViewSet):
     queryset = User.objects.all()
     serializer_class = GetTokenUserSerializer
     permission_classes = (permissions.AllowAny,)
@@ -44,30 +44,44 @@ class GetTokenUserApi(mixins.CreateModelMixin,
                 {'detail': 'Incorrect username or code'})
         return Response(
             {
-                'access': str(refresh.access_token),
-                'refresh': str(refresh)
+                'access': str(refresh.access_token)
             },
             status=status.HTTP_200_OK
         )
 
 
-class CreateUserViewSet(mixins.CreateModelMixin,
-                        viewsets.GenericViewSet):
-    queryset = User.objects.all()
-    serializer_class = UserSerializer
+class CreateUserView(APIView):
     permission_classes = (permissions.AllowAny,)
 
-    def perform_create(self, serializer):
-        code = code_generate()
-        username = self.request.data['username']
-        email = self.request.data['email']
-        if username != 'me':
-            user = User.objects.create(
-                username=username,
-                email=email,
-                confirmation_code=code,
-                role='user',
+    def post(self, request):
+        username = request.data['username']
+        email = request.data['email']
+        print(username, email)
+        if User.objects.filter(username=username).exists():
+            user = User.objects.get(username=username)
+            user.email = email  # Ее сказало что делать если почта новая?
+            user.save()  # а юзер старый, перезаписываю почту.
+            print(str(user), type(user), user.email, user.confirmation_code)
+            send_mail(
+                f'confirmation_code пользователя {username}',
+                f'Вот вам код: "{user.confirmation_code}", для YaMDB',
+                'YaMDB@ya.com',
+                [user.email, ],
+                fail_silently=False,
             )
+            return Response(
+                {
+                    'username': str(username),
+                    'confirmation_code': str(user.confirmation_code),
+                },
+                status=status.HTTP_200_OK)
+
+        if request.data['username'] == 'me':
+            raise serializers.ValidationError('Нельзя использовать имя "me"')
+        code = code_generate()
+        serializer = RetrieveUpdateUserSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save(confirmation_code=code, role='user',)
             send_mail(
                 f'confirmation_code пользователя {username}',
                 f'Вот вам код: "{code}", чтобы вы могли зайти на YaMDB',
@@ -75,5 +89,31 @@ class CreateUserViewSet(mixins.CreateModelMixin,
                 [email, ],
                 fail_silently=False,
             )
-            return user
-        raise serializers.ValidationError('Нельзя использовать имя "me"')
+            return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class RetrieveUpdateUserView(APIView):
+    permission_classes = (permissions.IsAuthenticated,)
+
+    def get(self, request):
+        user = User.objects.get(id=request.user.id)
+        serializer = RetrieveUpdateUserSerializer(user)
+        return Response(serializer.data)
+
+    def patch(self, request):
+        user = User.objects.get(id=request.user.id)
+        if 'role' in request.data:
+            request.data.pop('role')
+        serializer = RetrieveUpdateUserSerializer(
+            user, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response(status=status.HTTP_400_BAD_REQUEST)
+
+
+class AdminUserViewSet(viewsets.ModelViewSet):
+    queryset = User.objects.all()
+    serializer_class = RetrieveUpdateUserSerializer
+    permission_classes = (permissions.IsAuthenticated, YaMDB_Admin,)
+    lookup_field = 'username'
