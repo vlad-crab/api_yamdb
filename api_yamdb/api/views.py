@@ -4,6 +4,8 @@ from django.core.mail import send_mail
 from django.shortcuts import get_object_or_404
 
 from rest_framework import mixins, viewsets, permissions, status, serializers
+from rest_framework import filters
+from rest_framework.pagination import PageNumberPagination
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
@@ -116,4 +118,7 @@ class AdminUserViewSet(viewsets.ModelViewSet):
     queryset = User.objects.all()
     serializer_class = RetrieveUpdateUserSerializer
     permission_classes = (permissions.IsAuthenticated, YaMDB_Admin,)
+    pagination_class = PageNumberPagination
+    filter_backends = (filters.SearchFilter, )
+    search_fields = ('username',)
     lookup_field = 'username'
