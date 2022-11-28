@@ -114,7 +114,7 @@ class CreateUserViewSet(mixins.CreateModelMixin,
     serializer_class = serializers.UserSerializer
     permission_classes = (permissions.AllowAny,)
 
-    def perform_create(self, serializer):
+    def performc_create(self, serializer):
         code = code_generate()
         username = self.request.data['username']
         email = self.request.data['email']
