@@ -9,6 +9,7 @@ router_v1.register("genres", views.GenreViewSet, basename='Genre')
 router_v1.register("categories", views.CategoryViewSet, basename='Category')
 router_v1.register(r'auth/signup', views.CreateUserViewSet)
 router_v1.register(r'auth/token', views.GetTokenUserApi, basename='GetToken')
+router_v1.register(r'users', views.AdminUserViewSet, basename='AdminUser')
 router_v1.register(
     r'titles/(?P<title_id>\d+)/reviews/(?P<review_id>\d+)/comments',
     views.CommentViewSet,

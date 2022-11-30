@@ -77,3 +77,13 @@ class UserSerializer(serializers.ModelSerializer):
 class GetTokenUserSerializer(serializers.Serializer):
     username = serializers.CharField()
     confirmation_code = serializers.CharField()
+
+
+class RetrieveUpdateUserSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ('username', 'email', 'first_name', 'last_name', 'bio',
+                  'role',)
+        read_only = ('role')
+        
+

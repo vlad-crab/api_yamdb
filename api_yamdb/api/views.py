@@ -8,17 +8,24 @@ from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.filters import SearchFilter
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework.pagination import PageNumberPagination
 
 from reviews.models import Category, Genre, Title, Review, User
 from api.filters import TitleFilter
 import api.serializers as serializers
-from .permissions import CustomPermission
+from .permissions import CustomPermission, IsAdminOrReadOnly
+from reviews.models import User
+from .permissions import YaMDB_Admin
+from api.serializers import (
+    GetTokenUserSerializer,
+    RetrieveUpdateUserSerializer
+)
 
 
 class TitlesViewSet(viewsets.ModelViewSet):
     queryset = Title.objects.all()
     filter_backends = (DjangoFilterBackend, SearchFilter)
-    permission_classes = (CustomPermission, )
+    permission_classes = [IsAdminOrReadOnly]
     filterset_class = TitleFilter
 
     def get_serializer_class(self):
@@ -36,7 +43,7 @@ class CreateListDestroyViewSet(mixins.ListModelMixin,
 class CategoryViewSet(CreateListDestroyViewSet):
     queryset = Category.objects.all()
     serializer_class = serializers.CategorySerializer
-    permission_classes = (CustomPermission,)
+    permission_classes = [IsAdminOrReadOnly]
     search_fields = ['name']
     filter_backends = [SearchFilter]
     lookup_field = 'slug'
@@ -45,7 +52,7 @@ class CategoryViewSet(CreateListDestroyViewSet):
 class GenreViewSet(CreateListDestroyViewSet):
     queryset = Genre.objects.all()
     serializer_class = serializers.GenreSerializer
-    permission_classes = (CustomPermission,)
+    permission_classes = [IsAdminOrReadOnly]
     filter_backends = [SearchFilter]
     search_fields = ['name']
     lookup_field = 'slug'
@@ -134,3 +141,13 @@ class CreateUserViewSet(mixins.CreateModelMixin,
             )
             return user
         raise serializers.ValidationError('Нельзя использовать имя "me"')
+
+
+class AdminUserViewSet(viewsets.ModelViewSet):
+    queryset = User.objects.all()
+    serializer_class = RetrieveUpdateUserSerializer
+    permission_classes = (permissions.IsAuthenticated, YaMDB_Admin,)
+    pagination_class = PageNumberPagination
+    filter_backends = (SearchFilter, )
+    search_fields = ('username',)
+    lookup_field = 'username'
