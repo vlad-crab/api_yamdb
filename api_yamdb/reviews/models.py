@@ -11,8 +11,17 @@ ROLE = (
 
 
 class User(AbstractUser):
+    username = models.CharField('Никнейм', max_length=150, unique=True,)
+    email = models.EmailField('Епочта', max_length=254, unique=True,)
+    first_name = models.CharField(
+        'Имя пользователя',
+        max_length=150, blank=True,
+    )
     bio = models.TextField('Биография', blank=True,)
-    role = models.TextField('Роль пользователя', max_length=16, choices=ROLE)
+    role = models.CharField(
+        'Роль пользователя', max_length=16,
+        choices=ROLE, default='user'
+    )
     confirmation_code = models.CharField(
         'Код подтверждения',
         max_length=8,
@@ -67,6 +76,8 @@ class Title(models.Model):
     class Meta:
         verbose_name = 'Произведение'
         verbose_name_plural = 'Произведения'
+        ordering = ['year']
+
 
 
 class Review(models.Model):
@@ -76,17 +87,22 @@ class Review(models.Model):
     author = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
-        related_name='reviews'
+        related_name='reviews',
+        null=False
     )
     title = models.ForeignKey(
         Title,
         on_delete=models.CASCADE,
-        related_name='reviews'
+        related_name='reviews',
     )
 
     class Meta:
         verbose_name = 'Отзыв'
         verbose_name_plural = 'Отзывы'
+        constraints = [
+            models.UniqueConstraint(fields=['author', 'title'], name='unique_review_constraint')
+        ]
+        ordering = ["-pub_date"]
 
     def __str__(self):
         return self.text
@@ -109,6 +125,7 @@ class Comment(models.Model):
     class Meta:
         verbose_name = 'Коментарий'
         verbose_name_plural = 'Коментарии'
-
+        ordering = ["-pub_date"]
+        
     def __str__(self):
         return self.text
