@@ -2,7 +2,6 @@ import csv
 
 from django.conf import settings
 from django.core.management import BaseCommand
-
 from reviews.models import Category, Comment, Genre, Review, Title, User
 
 TABLES = {
@@ -41,8 +40,9 @@ class Command(BaseCommand):
             ) as csv_file:
                 reader = csv.DictReader(csv_file)
                 for row in reader:
-                    target = links[links[order[0]]].objects.get(id=row[links[order[0]]])
-                    sub = row[links[order[1]]]
-                    target.genre.add(sub)        
+                    target = links[links['order'[0]]].objects.get(
+                        id=row[links['order'[0]]]
+                    )
+                    sub = row[links['order'[1]]]
+                    target.genre.add(sub)
         self.stdout.write(self.style.SUCCESS('Все данные загружены'))
-        

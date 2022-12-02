@@ -1,6 +1,5 @@
 from rest_framework import serializers
-
-from reviews.models import Category, Genre, Title, Comment, Review, User
+from reviews.models import Category, Genre, Title
 
 
 class CategorySerializer(serializers.ModelSerializer):
@@ -43,47 +42,3 @@ class TitleCreateSerializer(serializers.ModelSerializer):
     class Meta:
         fields = ('__all__')
         model = Title
-
-
-class ReviewSerializer(serializers.ModelSerializer):
-    author = serializers.StringRelatedField()
-    title = serializers.StringRelatedField()
-
-    class Meta:
-        fields = ('id', 'text', 'author', 'score', 'pub_date')
-        model = Review
-        read_only_fields = ('pub_date', 'author', 'title')
-
-
-class CommentSerializer(serializers.ModelSerializer):
-    author = serializers.StringRelatedField()
-
-    class Meta:
-        fields = ('id', 'text', 'author', 'pub_date')
-        model = Comment
-        read_only_fields = ('id', 'pub_date', 'author')
-
-
-class UserSerializer(serializers.ModelSerializer):
-
-    class Meta:
-        model = User
-        fields = (
-            'username', 'email', 'role', 'bio', 'first_name', 'last_name',
-        )
-        read_only_fields = ('role', 'bio', 'first_name', 'last_name',)
-
-
-class GetTokenUserSerializer(serializers.Serializer):
-    username = serializers.CharField()
-    confirmation_code = serializers.CharField()
-
-
-class RetrieveUpdateUserSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = User
-        fields = ('username', 'email', 'first_name', 'last_name', 'bio',
-                  'role',)
-        read_only = ('role')
-        
-

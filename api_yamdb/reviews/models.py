@@ -1,29 +1,14 @@
+from django.core.exceptions import ValidationError
 from django.db import models
-from django.contrib.auth.models import AbstractUser
+from django.utils import timezone
 
 
-SCORE_CHOICES = [(i, i) for i in range(1, 11)]
-ROLE = (
-    ('admin', 'admin'),
-    ('moderator', 'moderator'),
-    ('user', 'user'),
-)
-
-
-class User(AbstractUser):
-    username = models.CharField('Никнейм', max_length=150, unique=True,)
-    email = models.EmailField('Епочта', max_length=254, unique=True,)
-    first_name = models.CharField('Имя пользователя',
-                                  max_length=150, blank=True,)
-    bio = models.TextField('Биография', blank=True,)
-    role = models.CharField('Роль пользователя', max_length=16,
-                            choices=ROLE, default='user')
-    confirmation_code = models.CharField('Код подтверждения',
-                                         max_length=8,
-                                         blank=True,)
-
-    class Meta:
-        unique_together = ('username', 'email')
+def validate_year(value):
+    now = timezone.now().year
+    if value > now:
+        raise ValidationError(
+            f'{value} не может быть больше {now}'
+        )
 
 
 class Genre(models.Model):
@@ -56,7 +41,8 @@ class Title(models.Model):
     name = models.CharField(max_length=200, verbose_name='Произведение')
     year = models.IntegerField(
         null=True,
-        verbose_name="Год выпуска"
+        verbose_name="Год выпуска",
+        validators=(validate_year, )
     )
     description = models.CharField(max_length=200, null=True)
     genre = models.ManyToManyField(Genre, blank=True, related_name="titles")
@@ -70,48 +56,3 @@ class Title(models.Model):
     class Meta:
         verbose_name = 'Произведение'
         verbose_name_plural = 'Произведения'
-
-
-class Review(models.Model):
-    text = models.TextField()
-    pub_date = models.DateTimeField(auto_now_add=True)
-    score = models.IntegerField(choices=SCORE_CHOICES)
-    author = models.ForeignKey(
-        User,
-        on_delete=models.CASCADE,
-        related_name='reviews'
-    )
-    title = models.ForeignKey(
-        Title,
-        on_delete=models.CASCADE,
-        related_name='reviews'
-    )
-
-    class Meta:
-        verbose_name = 'Отзыв'
-        verbose_name_plural = 'Отзывы'
-
-    def __str__(self):
-        return self.text
-
-
-class Comment(models.Model):
-    text = models.TextField()
-    pub_date = models.DateTimeField(auto_now_add=True)
-    review = models.ForeignKey(
-        Review,
-        on_delete=models.CASCADE,
-        related_name='comments'
-    )
-    author = models.ForeignKey(
-        User,
-        on_delete=models.CASCADE,
-        related_name='comments'
-    )
-
-    class Meta:
-        verbose_name = 'Коментарий'
-        verbose_name_plural = 'Коментарии'
-
-    def __str__(self):
-        return self.text
