@@ -29,5 +29,4 @@ class User(AbstractUser):
                                          blank=True,)
 
     class Meta:
-        unique_together = ('username', 'email')  # можно убрать?
-        # хотя в username разрешен символ @ и . Они могу дублироваться
+        unique_together = ('username', 'email')

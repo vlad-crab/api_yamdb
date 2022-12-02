@@ -23,13 +23,6 @@ def code_generate(size=8, chars=string.ascii_uppercase + string.digits):
     return ''.join(random.choice(chars) for _ in range(size))
 
 
-def get_tokens_for_user(user):
-    refresh = RefreshToken.for_user(user)
-    return {
-        'access': str(refresh.access_token),
-    }
-
-
 class GetTokenViewSet(mixins.CreateModelMixin, viewsets.GenericViewSet):
     queryset = User.objects.all()
     serializer_class = GetTokenSerializer
@@ -57,10 +50,10 @@ class CreateUserView(APIView):
     permission_classes = (permissions.AllowAny,)
 
     def post(self, request):
-        username = request.data['username']
-        email = request.data['email']
-        if request.data['username'] == 'me':  # можно просто username == 'me'
+        if request.data.get('username', False) == 'me':
             raise serializers.ValidationError('Нельзя использовать имя "me"')
+        username = request.data.get('username')
+        email = request.data.get('email')
         if not User.objects.filter(username=username).exists():
             code = code_generate()
             serializer = CreateUserSerializer(data=request.data)
@@ -71,8 +64,9 @@ class CreateUserView(APIView):
                                 status=status.HTTP_400_BAD_REQUEST)
         else:  # условие если пользователь сущетсвует
             user = User.objects.get(username=username)
-            user.email = email  # Не сказано, что делать если почта новая?
-            user.save()  # а юзер старый, перезаписываю почту.
+            if user.email != email:
+                return Response('А почта-то неверная!',
+                                status=status.HTTP_400_BAD_REQUEST)
             code = user.confirmation_code
         send_mail(
             f'confirmation_code пользователя {username}',
@@ -99,12 +93,11 @@ class RetrieveUpdateUserView(APIView):
 
     def patch(self, request):
         user = User.objects.get(id=request.user.id)
-        if 'role' in request.data:
-            request.data.pop('role')
         serializer = RetrieveUpdateUserSerializer(
             user, data=request.data, partial=True)
         if serializer.is_valid():
-            serializer.save()
+            serializer.save(username=user.username, email=user.email,
+                            role=user.role)
             return Response(serializer.data, status=status.HTTP_200_OK)
         return Response(status=status.HTTP_400_BAD_REQUEST)
 
