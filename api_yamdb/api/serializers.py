@@ -1,5 +1,4 @@
 from rest_framework import serializers
-from django.core.validators import RegexValidator
 from django.shortcuts import get_object_or_404
 from django.db.models import Avg
 
@@ -29,7 +28,8 @@ class TitleListSerializer(serializers.ModelSerializer):
     rating = serializers.SerializerMethodField(read_only=True)
 
     class Meta:
-        fields = ('name', 'year', 'description', 'genre', 'category', 'rating', 'id')
+        fields = ('name', 'year', 'description',
+                  'genre', 'category', 'rating', 'id')
         model = Title
         read_only_fields = ('id', 'genre', 'category', 'rating')
 
@@ -51,7 +51,8 @@ class TitleCreateSerializer(serializers.ModelSerializer):
     )
 
     class Meta:
-        fields = ('id', 'name', 'year', 'description', 'genre', 'category', 'reviews')
+        fields = ('id', 'name', 'year', 'description',
+                  'genre', 'category', 'reviews')
         model = Title
 
 
@@ -68,10 +69,15 @@ class ReviewSerializer(serializers.ModelSerializer):
         read_only_fields = ('pub_date', 'author', 'title')
 
     def validate(self, data):
-        title_id = self.context.get('request').parser_context.get('kwargs').get('title_id')
+        parser_context = self.context.get('request').parser_context
+        title_id = parser_context.get('kwargs').get('title_id')
         title = get_object_or_404(Title, pk=title_id)
         if self.context.get('request').method == 'POST':
-            if Review.objects.filter(title=title, author=self.context.get('request').user).exists():
+            flag = Review.objects.filter(
+                title=title,
+                author=self.context.get('request').user
+            ).exists()
+            if flag:
                 raise serializers.ValidationError(
                     'Нельзя добавить несколько ревью на одно произведение'
                 )
@@ -79,7 +85,10 @@ class ReviewSerializer(serializers.ModelSerializer):
 
 
 class CommentSerializer(serializers.ModelSerializer):
-    author = serializers.StringRelatedField(default=serializers.CurrentUserDefault(), read_only=True)
+    author = serializers.StringRelatedField(
+        default=serializers.CurrentUserDefault(),
+        read_only=True
+    )
 
     class Meta:
         fields = ('id', 'text', 'author', 'pub_date', 'review')

@@ -1,6 +1,4 @@
-from django.contrib.auth import get_user_model
 from rest_framework import permissions
-from reviews.models import Review, Comment, User
 
 
 class CustomPermission(permissions.BasePermission):
@@ -29,7 +27,7 @@ class CustomIsAdminOrReadOnly(permissions.BasePermission):
         return request.user.is_authenticated and request.user.role == 'admin'
 
 
-class YaMDB_Admin(permissions.BasePermission):
+class YaMDBAdmin(permissions.BasePermission):
 
     def has_permission(self, request, view):
         return request.user.role == 'admin' or request.user.is_staff is True

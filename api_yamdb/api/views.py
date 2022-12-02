@@ -1,20 +1,19 @@
-from django.shortcuts import render
 import string
 import random
 from django.core.mail import send_mail
 from django.shortcuts import get_object_or_404
-from rest_framework import mixins, status, viewsets, permissions, serializers, views
+from rest_framework import (mixins, status, viewsets,
+                            permissions, serializers, views)
 from rest_framework.filters import SearchFilter
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
 from django_filters.rest_framework import DjangoFilterBackend
-from .permissions import YaMDB_Admin
 from rest_framework.pagination import PageNumberPagination
 
 from reviews.models import Category, Genre, Title, Review, User, Comment
 from .filters import TitleFilter
 import api.serializers as sz
-from .permissions import CustomPermission, CustomIsAdminOrReadOnly
+from .permissions import CustomPermission, CustomIsAdminOrReadOnly, YaMDBAdmin
 
 
 class TitlesViewSet(viewsets.ModelViewSet):
@@ -36,6 +35,7 @@ class CreateListDestroyViewSet(mixins.ListModelMixin,
                                viewsets.GenericViewSet):
     pass
 
+
 class CategoryViewSet(CreateListDestroyViewSet):
     queryset = Category.objects.all()
     serializer_class = sz.CategorySerializer
@@ -50,7 +50,7 @@ class GenreViewSet(CreateListDestroyViewSet):
     queryset = Genre.objects.all()
     serializer_class = sz.GenreSerializer
     permission_classes = (CustomIsAdminOrReadOnly,)
-    filter_backends = [SearchFilter,]
+    filter_backends = [SearchFilter, ]
     pagination_class = PageNumberPagination
     search_fields = ['name']
     lookup_field = 'slug'
@@ -189,7 +189,7 @@ class RetrieveUpdateUserView(views.APIView):
 class AdminUserViewSet(viewsets.ModelViewSet):
     queryset = User.objects.all()
     serializer_class = sz.RetrieveUpdateUserSerializer
-    permission_classes = (permissions.IsAuthenticated, YaMDB_Admin,)
+    permission_classes = (permissions.IsAuthenticated, YaMDBAdmin,)
     pagination_class = PageNumberPagination
     filter_backends = (SearchFilter,)
     search_fields = ('username',)
