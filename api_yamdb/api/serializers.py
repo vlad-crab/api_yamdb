@@ -55,9 +55,11 @@ class TitleCreateSerializer(serializers.ModelSerializer):
         model = Title
 
 
-
 class ReviewSerializer(serializers.ModelSerializer):
-    author = serializers.StringRelatedField(default=serializers.CurrentUserDefault(), read_only=True)
+    author = serializers.StringRelatedField(
+        default=serializers.CurrentUserDefault(),
+        read_only=True
+    )
     title = serializers.PrimaryKeyRelatedField(read_only=True)
 
     class Meta:
@@ -85,17 +87,14 @@ class CommentSerializer(serializers.ModelSerializer):
         read_only_fields = ('id', 'pub_date', 'author', 'review')
 
 
-class CreateUserSerializer(serializers.Serializer):
-    username = serializers.CharField(
-        max_length=150,
-        validators=[RegexValidator(regex=r'^[\w.@+-]+',
-                                   message='Некорректное имя',
-                                   code='invalid_username'), ])
-    email = serializers.EmailField()
-    confirmation_code = serializers.CharField(max_length=8)
+class CreateUserSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ('username', 'email', )
+        read_only = ('role', )
 
 
-class GetTokenUserSerializer(serializers.Serializer):
+class GetTokenSerializer(serializers.Serializer):
     username = serializers.CharField()
     confirmation_code = serializers.CharField()
 
@@ -104,10 +103,5 @@ class RetrieveUpdateUserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ('username', 'email', 'first_name', 'last_name', 'bio',
-                  'role',)
-        read_only = ('role')
-
-
-class GetTokenUserSerializer(serializers.Serializer):
-    username = serializers.CharField()
-    confirmation_code = serializers.CharField()
+                  'role', )
+        read_only = ('role',)
