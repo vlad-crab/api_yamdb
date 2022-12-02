@@ -3,6 +3,9 @@ from django.contrib.auth.models import AbstractUser
 from django.utils import timezone
 from django.core.exceptions import ValidationError
 from django.core.validators import RegexValidator
+from django.core.exceptions import ValidationError
+from django.utils import timezone
+
 
 
 SCORE_CHOICES = [(i, i) for i in range(1, 11)]
@@ -12,9 +15,12 @@ ROLE = (
     ('user', 'user'),
 )
 
+
 NAME_REGEX = RegexValidator(regex=r'^[\w.@+-]+$',
                             message='Некорректное имя',
                             code='invalid_username')
+
+
 
 
 def validate_year(value):
@@ -26,6 +32,7 @@ def validate_year(value):
 
 
 class User(AbstractUser):
+
     username = models.CharField('Никнейм', max_length=150, unique=True,
                                 validators=[NAME_REGEX],)
     email = models.EmailField('Епочта', max_length=254, unique=True,)
@@ -37,6 +44,22 @@ class User(AbstractUser):
     confirmation_code = models.CharField('Код подтверждения',
                                          max_length=8,
                                          blank=True,)
+    username = models.CharField('Никнейм', max_length=150, unique=True,)
+    email = models.EmailField('Епочта', max_length=254, unique=True,)
+    first_name = models.CharField(
+        'Имя пользователя',
+        max_length=150, blank=True,
+    )
+    bio = models.TextField('Биография', blank=True,)
+    role = models.CharField(
+        'Роль пользователя', max_length=16,
+        choices=ROLE, default='user'
+    )
+    confirmation_code = models.CharField(
+        'Код подтверждения',
+        max_length=8,
+        blank=True,
+    )
 
     class Meta:
         unique_together = ('username', 'email')
@@ -73,7 +96,7 @@ class Title(models.Model):
     year = models.IntegerField(
         null=True,
         verbose_name="Год выпуска",
-        validators=(validate_year,)
+        validators=(validate_year, )
     )
     description = models.CharField(max_length=200, null=True)
     genre = models.ManyToManyField(Genre, blank=True, related_name="titles")
@@ -88,7 +111,6 @@ class Title(models.Model):
         verbose_name = 'Произведение'
         verbose_name_plural = 'Произведения'
         ordering = ['year']
-
 
 
 class Review(models.Model):
