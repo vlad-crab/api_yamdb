@@ -1,12 +1,14 @@
 import api.serializers as serializers
 from api.filters import TitleFilter
 from django_filters.rest_framework import DjangoFilterBackend
-from rest_framework import mixins, serializers, viewsets
+from rest_framework import mixins, viewsets
 from rest_framework.filters import SearchFilter
 from rest_framework.pagination import PageNumberPagination
 from reviews.models import Category, Genre, Title
 
 from .permissions import CustomIsAdminOrReadOnly
+from .serializers import (CategorySerializer, GenreSerializer,
+                          TitleCreateSerializer, TitleListSerializer)
 
 
 class TitlesViewSet(viewsets.ModelViewSet):
