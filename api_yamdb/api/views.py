@@ -1,31 +1,28 @@
-from django.shortcuts import render
-import string
 import random
+import string
+
+import api.serializers as serializers
+from api.filters import TitleFilter
+from api.serializers import (GetTokenUserSerializer,
+                             RetrieveUpdateUserSerializer)
 from django.core.mail import send_mail
-from django.shortcuts import get_object_or_404
-from rest_framework import mixins, status, viewsets, permissions, serializers
+from django.shortcuts import get_object_or_404, render
 from django_filters.rest_framework import DjangoFilterBackend
+from rest_framework import mixins, permissions, serializers, status, viewsets
 from rest_framework.filters import SearchFilter
+from rest_framework.pagination import PageNumberPagination
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
-from rest_framework.pagination import PageNumberPagination
+from reviews.models import Category, Genre, Review, Title, User
 
-from reviews.models import Category, Genre, Title, Review, User
-from api.filters import TitleFilter
-import api.serializers as serializers
-from .permissions import CustomPermission, IsAdminOrReadOnly
-from reviews.models import User
-from .permissions import YaMDB_Admin
-from api.serializers import (
-    GetTokenUserSerializer,
-    RetrieveUpdateUserSerializer
-)
+from .permissions import CustomPermission, IsAdminOrReadOnly, YaMDB_Admin
 
 
 class TitlesViewSet(viewsets.ModelViewSet):
     queryset = Title.objects.all()
     filter_backends = (DjangoFilterBackend, SearchFilter)
-    permission_classes = [IsAdminOrReadOnly]
+    permission_classes = [CustomIsAdminOrReadOnly]
+    pagination_class = PageNumberPagination
     filterset_class = TitleFilter
 
     def get_serializer_class(self):
@@ -43,7 +40,8 @@ class CreateListDestroyViewSet(mixins.ListModelMixin,
 class CategoryViewSet(CreateListDestroyViewSet):
     queryset = Category.objects.all()
     serializer_class = serializers.CategorySerializer
-    permission_classes = [IsAdminOrReadOnly]
+    permission_classes = [CustomIsAdminOrReadOnly]
+    pagination_class = PageNumberPagination
     search_fields = ['name']
     filter_backends = [SearchFilter]
     lookup_field = 'slug'
@@ -52,7 +50,8 @@ class CategoryViewSet(CreateListDestroyViewSet):
 class GenreViewSet(CreateListDestroyViewSet):
     queryset = Genre.objects.all()
     serializer_class = serializers.GenreSerializer
-    permission_classes = [IsAdminOrReadOnly]
+    permission_classes = [CustomIsAdminOrReadOnly]
+    pagination_class = PageNumberPagination
     filter_backends = [SearchFilter]
     search_fields = ['name']
     lookup_field = 'slug'
