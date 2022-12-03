@@ -1,5 +1,3 @@
-import string
-import random
 from django.core.mail import send_mail
 from django.shortcuts import get_object_or_404
 
@@ -12,15 +10,12 @@ from rest_framework_simplejwt.tokens import RefreshToken
 
 from reviews.models import User
 from .permissions import YaMDB_Admin
-from api.serializers import (
+from .utils import code_generate
+from .serializers import (
     CreateUserSerializer,
     GetTokenSerializer,
     RetrieveUpdateUserSerializer
 )
-
-
-def code_generate(size=8, chars=string.ascii_uppercase + string.digits):
-    return ''.join(random.choice(chars) for _ in range(size))
 
 
 class GetTokenViewSet(mixins.CreateModelMixin, viewsets.GenericViewSet):
@@ -52,6 +47,7 @@ class CreateUserView(APIView):
     def post(self, request):
         if request.data.get('username', False) == 'me':
             raise serializers.ValidationError('Нельзя использовать имя "me"')
+
         username = request.data.get('username')
         email = request.data.get('email')
         if not User.objects.filter(username=username).exists():
@@ -62,12 +58,14 @@ class CreateUserView(APIView):
             else:
                 return Response(serializer.errors,
                                 status=status.HTTP_400_BAD_REQUEST)
+
         else:  # условие если пользователь сущетсвует
             user = User.objects.get(username=username)
             if user.email != email:
                 return Response('А почта-то неверная!',
                                 status=status.HTTP_400_BAD_REQUEST)
             code = user.confirmation_code
+
         send_mail(
             f'confirmation_code пользователя {username}',
             f'Вот вам код: "{code}", для YaMDB',
@@ -75,6 +73,7 @@ class CreateUserView(APIView):
             [email],
             fail_silently=False,
         )
+
         return Response(
             {
                 'username': str(username),
