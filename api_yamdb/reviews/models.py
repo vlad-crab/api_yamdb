@@ -1,9 +1,8 @@
-from django.db import models
 from django.contrib.auth.models import AbstractUser
 from django.core.validators import RegexValidator
-from django.core.exceptions import ValidationError
-from django.utils import timezone
+from django.db import models
 
+from .validators import validate_year
 
 SCORE_CHOICES = [(i, i) for i in range(1, 11)]
 ROLE = (
@@ -16,14 +15,6 @@ ROLE = (
 NAME_REGEX = RegexValidator(regex=r'^[\w.@+-]+$',
                             message='Некорректное имя',
                             code='invalid_username')
-
-
-def validate_year(value):
-    now = timezone.now().year
-    if value > now:
-        raise ValidationError(
-            f'{value} не может быть больше {now}'
-        )
 
 
 class User(AbstractUser):

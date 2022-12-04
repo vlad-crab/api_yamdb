@@ -1,25 +1,26 @@
-import string
-import random
 from django.core.mail import send_mail
 from django.shortcuts import get_object_or_404
-from rest_framework import (mixins, status, viewsets,
-                            permissions, serializers, views)
+from django_filters.rest_framework import DjangoFilterBackend
+from rest_framework import (mixins, permissions, serializers, status, views,
+                            viewsets)
 from rest_framework.filters import SearchFilter
+from rest_framework.pagination import PageNumberPagination
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
-from django_filters.rest_framework import DjangoFilterBackend
-from rest_framework.pagination import PageNumberPagination
 
-from reviews.models import Category, Genre, Title, Review, User, Comment
+from reviews.models import Category, Comment, Genre, Review, Title, User
+
 from .filters import TitleFilter
+from .utils import code_generate
 import api.serializers as sz
-from .permissions import CustomPermission, CustomIsAdminOrReadOnly, YaMDBAdmin
+from .permissions import (AuthorAdminModeratorOrReadOnly, IsAdminOrReadOnly,
+                          YaMDBAdmin)
 
 
 class TitlesViewSet(viewsets.ModelViewSet):
     queryset = Title.objects.all()
     filter_backends = (DjangoFilterBackend, SearchFilter)
-    permission_classes = (CustomIsAdminOrReadOnly,)
+    permission_classes = (IsAdminOrReadOnly,)
     pagination_class = PageNumberPagination
     filterset_class = TitleFilter
 
@@ -39,7 +40,7 @@ class CreateListDestroyViewSet(mixins.ListModelMixin,
 class CategoryViewSet(CreateListDestroyViewSet):
     queryset = Category.objects.all()
     serializer_class = sz.CategorySerializer
-    permission_classes = (CustomIsAdminOrReadOnly,)
+    permission_classes = (IsAdminOrReadOnly,)
     pagination_class = PageNumberPagination
     search_fields = ['name']
     filter_backends = (SearchFilter,)
@@ -49,7 +50,7 @@ class CategoryViewSet(CreateListDestroyViewSet):
 class GenreViewSet(CreateListDestroyViewSet):
     queryset = Genre.objects.all()
     serializer_class = sz.GenreSerializer
-    permission_classes = (CustomIsAdminOrReadOnly,)
+    permission_classes = (IsAdminOrReadOnly,)
     filter_backends = [SearchFilter, ]
     pagination_class = PageNumberPagination
     search_fields = ['name']
@@ -59,7 +60,7 @@ class GenreViewSet(CreateListDestroyViewSet):
 class ReviewViewSet(viewsets.ModelViewSet):
     queryset = Review.objects.all()
     serializer_class = sz.ReviewSerializer
-    permission_classes = (CustomPermission,)
+    permission_classes = (AuthorAdminModeratorOrReadOnly,)
 
     def get_queryset(self):
         title = get_object_or_404(Title, pk=self.kwargs.get('title_id'))
@@ -82,7 +83,7 @@ class ReviewViewSet(viewsets.ModelViewSet):
 
 class CommentViewSet(viewsets.ModelViewSet):
     serializer_class = sz.CommentSerializer
-    permission_classes = (CustomPermission,)
+    permission_classes = (AuthorAdminModeratorOrReadOnly,)
 
     def get_queryset(self):
         review = get_object_or_404(Review, pk=self.kwargs.get('review_id'))
@@ -101,10 +102,6 @@ class CommentViewSet(viewsets.ModelViewSet):
             author=self.request.user,
             review=review
         )
-
-
-def code_generate(size=8, chars=string.ascii_uppercase + string.digits):
-    return ''.join(random.choice(chars) for _ in range(size))
 
 
 class GetTokenViewSet(mixins.CreateModelMixin, viewsets.GenericViewSet):
@@ -134,8 +131,6 @@ class CreateUserView(views.APIView):
     permission_classes = (permissions.AllowAny,)
 
     def post(self, request):
-        if request.data.get('username', False) == 'me':
-            raise serializers.ValidationError('Нельзя использовать имя "me"')
         username = request.data.get('username')
         email = request.data.get('email')
         if not User.objects.filter(username=username).exists():
@@ -146,12 +141,14 @@ class CreateUserView(views.APIView):
             else:
                 return Response(serializer.errors,
                                 status=status.HTTP_400_BAD_REQUEST)
-        else:  # условие если пользователь сущетсвует
+
+        else:
             user = User.objects.get(username=username)
             if user.email != email:
                 return Response('А почта-то неверная!',
                                 status=status.HTTP_400_BAD_REQUEST)
             code = user.confirmation_code
+
         send_mail(
             f'confirmation_code пользователя {username}',
             f'Вот вам код: "{code}", для YaMDB',
@@ -159,6 +156,7 @@ class CreateUserView(views.APIView):
             [email],
             fail_silently=False,
         )
+
         return Response(
             {
                 'username': str(username),

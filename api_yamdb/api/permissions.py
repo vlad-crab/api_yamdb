@@ -1,7 +1,7 @@
 from rest_framework import permissions
 
 
-class CustomPermission(permissions.BasePermission):
+class AuthorAdminModeratorOrReadOnly(permissions.BasePermission):
 
     def has_permission(self, request, view):
         return (request.method == 'GET'
@@ -17,7 +17,7 @@ class CustomPermission(permissions.BasePermission):
         return False
 
 
-class CustomIsAdminOrReadOnly(permissions.BasePermission):
+class IsAdminOrReadOnly(permissions.BasePermission):
 
     def has_permission(self, request, view):
         if request.method in permissions.SAFE_METHODS:

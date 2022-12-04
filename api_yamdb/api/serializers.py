@@ -1,8 +1,7 @@
-from rest_framework import serializers
-from django.shortcuts import get_object_or_404
 from django.db.models import Avg
-
-from reviews.models import Category, Genre, Title, Comment, Review, User
+from django.shortcuts import get_object_or_404
+from rest_framework import serializers
+from reviews.models import Category, Comment, Genre, Review, Title, User
 
 
 class CategorySerializer(serializers.ModelSerializer):
@@ -73,11 +72,11 @@ class ReviewSerializer(serializers.ModelSerializer):
         title_id = parser_context.get('kwargs').get('title_id')
         title = get_object_or_404(Title, pk=title_id)
         if self.context.get('request').method == 'POST':
-            flag = Review.objects.filter(
+            review_exists = Review.objects.filter(
                 title=title,
                 author=self.context.get('request').user
             ).exists()
-            if flag:
+            if review_exists:
                 raise serializers.ValidationError(
                     'Нельзя добавить несколько ревью на одно произведение'
                 )
@@ -101,6 +100,11 @@ class CreateUserSerializer(serializers.ModelSerializer):
         model = User
         fields = ('username', 'email', )
         read_only = ('role', )
+
+    def validate(self, data):
+        if data.get('username') == 'me':
+            raise serializers.ValidationError('Нельзя использовать имя "me"')
+        return data
 
 
 class GetTokenSerializer(serializers.Serializer):
